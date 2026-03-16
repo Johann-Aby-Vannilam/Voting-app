@@ -1,0 +1,28 @@
+# =============================================================================
+# PersistentVolumeClaim for PostgreSQL data
+# =============================================================================
+#
+# On AWS EC2 with EKS or self-managed k8s using the EBS CSI driver:
+#   storageClassName: gp2     ← uses AWS EBS gp2 volumes (default for older EKS)
+#   storageClassName: gp3     ← use gp3 for newer EKS (check your cluster)
+#
+# To check available storage classes in your cluster:
+#   kubectl get storageclass
+#
+# HOW TO APPLY:
+#   kubectl apply -f db-pvc.yaml
+#   kubectl apply -f db-deployment.yaml
+#
+# =============================================================================
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-data
+spec:
+  accessModes:
+    - ReadWriteOnce        # EBS volumes only attach to one node at a time
+  resources:
+    requests:
+      storage: 5Gi         # change this to the size you need
+  storageClassName: gp2    # for AWS EKS — change to "gp3" if supported by your cluster

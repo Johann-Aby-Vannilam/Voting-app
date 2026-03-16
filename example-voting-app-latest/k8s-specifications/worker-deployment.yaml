@@ -1,0 +1,70 @@
+# =============================================================================
+# IMPORTANT — READ BEFORE DEPLOYING
+# =============================================================================
+# This deployment uses the pre-built public image: dockersamples/examplevotingapp_worker
+# That image does NOT contain our env-var code fix in worker/Program.cs.
+#
+# Before applying this file to EC2, you MUST:
+#   1. Build your own image:
+#        docker build -t <your-repo>/voting-worker:latest ./worker
+#   2. Push to ECR (or Docker Hub):
+#        docker push <your-repo>/voting-worker:latest
+#   3. Replace the image line below with your image:
+#        image: <your-repo>/voting-worker:latest
+#
+# If you skip this, PGHOST / PGUSER / PGPASSWORD etc. will be IGNORED and
+# the worker will try to connect to hardcoded "db" with hardcoded "postgres".
+# (which may still work if you kept the default values in secrets.yaml)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: worker
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+      - image: johann2003/voting-worker:latest
+        name: worker
+        env:
+        - name: PGHOST
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: PGHOST
+        - name: PGUSER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: PGUSER
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: PGPASSWORD
+        - name: PGDATABASE
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: PGDATABASE
+        - name: REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: REDIS_HOST
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"

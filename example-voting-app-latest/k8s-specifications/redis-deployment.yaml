@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: redis
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - image: redis:alpine
+        name: redis
+        args: ["--appendonly", "yes"]   # enable AOF persistence so queue survives pod restarts
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "250m"
+            memory: "128Mi"
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - mountPath: /data
+          name: redis-data
+      volumes:
+      - name: redis-data
+        emptyDir: {}
+        # NOTE: Redis is only a vote queue here, not the source of truth.
+        # emptyDir is acceptable — any votes in-flight when Redis restarts
+        # are lost, but the final DB (Postgres) always remains consistent.
+        # If you want full durability, replace emptyDir with a PVC:
+        #   persistentVolumeClaim:
+        #     claimName: redis-data
+        # and create a matching PVC (similar to db-pvc.yaml, 1Gi is enough).

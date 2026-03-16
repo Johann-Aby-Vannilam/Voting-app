@@ -1,0 +1,56 @@
+# =============================================================================
+# NOTE — Build your own image (recommended)
+# =============================================================================
+# Currently uses pre-built image: dockersamples/examplevotingapp_vote
+# The vote app has no critical code bugs, but to use custom OPTION_A / OPTION_B
+# or ensure you control the image, build and push your own:
+#   1. docker build -t <your-repo>/voting-vote:latest --target final ./vote
+#   2. docker push <your-repo>/voting-vote:latest
+#   3. Replace the image line below with: <your-repo>/voting-vote:latest
+#   4. Add env vars to the container spec:
+#      - name: OPTION_A
+#        value: "Cats"
+#      - name: OPTION_B
+#        value: "Dogs"
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vote
+  name: vote
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vote
+  template:
+    metadata:
+      labels:
+        app: vote
+    spec:
+      containers:
+      - image: johann2003/voting-vote:latest
+        name: vote
+        ports:
+        - containerPort: 80
+          name: vote
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20

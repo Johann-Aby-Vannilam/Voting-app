@@ -1,0 +1,64 @@
+# =============================================================================
+# IMPORTANT — READ BEFORE DEPLOYING
+# =============================================================================
+# This deployment uses the pre-built public image: dockersamples/examplevotingapp_result
+# That image does NOT contain our code fixes (path import fix + DATABASE_URL support).
+#
+# Before applying this file to EC2, you MUST:
+#   1. Build your own image:
+#        docker build -t <your-repo>/voting-result:latest ./result
+#   2. Push to ECR (or Docker Hub):
+#        docker push <your-repo>/voting-result:latest
+#   3. Replace the image line below with your image:
+#        image: <your-repo>/voting-result:latest
+#
+# If you skip this, the pre-built image will crash (ReferenceError: path is not
+# defined) when a user visits the result page, AND it will ignore DATABASE_URL.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: result
+  name: result
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: result
+  template:
+    metadata:
+      labels:
+        app: result
+    spec:
+      containers:
+      - image: johann2003/voting-result:latest
+        name: result
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: DATABASE_URL
+        ports:
+        - containerPort: 80
+          name: result
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20
